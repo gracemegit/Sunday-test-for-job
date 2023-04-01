@@ -1,0 +1,59 @@
+  # This is the shift database deployment manifest.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shift-db-deployment
+  labels:
+    app: shift-database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shift-database
+  template:
+    metadata:
+      labels:
+        app: shift-database
+    spec:
+      containers:
+      - name: shift-database
+        image: mysql:5.6
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: db_root_password
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: db_user_name
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: db_user_password
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: db_root_name
+        ports:
+        - containerPort: 3306
+      restartPolicy: Always
+      
+---
+  # This is the shift-database Service manifest.
+apiVersion: v1
+kind: Service
+metadata:
+  name: shift-db-service
+spec:
+  selector:
+   app: shift-database
+  ports:
+  - protocol: TCP
+    port: 3306
+    targetPort: 3306
+  type: ClusterIP

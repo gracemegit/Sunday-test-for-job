@@ -1,0 +1,74 @@
+  # This is the user-api deployment manifest section.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-api-deployment
+  labels:
+    app: user-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        app: user-api
+    spec:
+      containers:
+      - name: user-api
+        image: phpmyadmin:5.2.1-apache
+        env:
+        - name: PMA_HOST
+          valueFrom:
+              configMapKeyRef:
+                name: database-configmap
+                key: user_database_url
+        - name: PMA_USER
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: db_user_name
+        - name: PMA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: db_user_password
+        resources: {}     # other resources can be further defined here
+
+---
+  # This is the user-api Load Balancer Service manifest.
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-api-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: user-api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
+
+---
+  # This is the user-api Horizontal Pod Autoscaler manifest.
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: user-api-autoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: user-api-deployment
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70

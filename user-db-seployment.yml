@@ -1,0 +1,59 @@
+  # This is the user-database deployment manifest.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-db-deployment
+  labels:
+    app: user-database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-database
+  template:
+    metadata:
+      labels:
+        app: user-database
+    spec:
+      containers:
+      - name: user-database
+        image: mysql:5.6
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: db_root_password
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: db_user_name
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: db_user_password
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: db_root_name
+        ports:
+        - containerPort: 3306
+      restartPolicy: Always
+
+---
+  # This is the user-database Service manifest.
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-db-service
+spec:
+  selector:
+    app: user-database
+  ports:
+  - protocol: TCP
+    port: 3306
+    targetPort: 3306
+  type: ClusterIP
